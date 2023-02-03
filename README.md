@@ -1,6 +1,10 @@
-With Iter8, you can launch experiments declaratively and imperatively. The focus of this article is to showcase the former by describing how you can configure Iter8 to automatically test an HTTP application whenever you update it and ensure specific endpoints meet latency and error-related SLOs. Later on, we will also describe how modify the configuration in order to do automatically launch similar tests for a gRPC application.
+With Iter8, you can launch experiments declaratively and imperatively. The focus of this article is to showcase the former by describing how you can configure Iter8 to automatically test an HTTP application whenever you update it and ensure specific endpoints meet latency and error-related SLOs. 
 
-# Automatic performance testing for HTTP applications
+First, we will describe the basic usage 
+
+Later on, we will also describe how modify the configuration in order to do automatically launch similar tests for a gRPC application.
+
+# Automatic performance testing for single endpoint
 
 ### Download Iter8 CLI
 
@@ -41,7 +45,7 @@ Next, we will assign `httpbin` deployment the `app.kubernetes.io/version` label 
 kubectl label deployment httpbin app.kubernetes.io/version=1.0.0
 ```
 
-### Setup Kubernetes cluster with Iter8 AutoX
+### Configure AutoX
 
 Next, we will configure and install the AutoX controller.
 
@@ -57,14 +61,38 @@ helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1
 --set 'groups.httpbin.specs.iter8.values.ready.deploy=httpbin' \
 --set 'groups.httpbin.specs.iter8.values.ready.service=httpbin' \
 --set 'groups.httpbin.specs.iter8.values.ready.timeout=60s' \
---set 'groups.httpbin.specs.iter8.values.http.numRequests=200' \
---set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
---set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.url=http://httpbin.default/post' \
---set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.payloadStr=hello' \
---set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/error-count=0' \
---set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/latency-mean=50' \
---set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/error-count=0' \
---set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/latency-mean=150' \
+--set 'groups.httpbin.specs.iter8.values.http.url=http://httpbin.default/get' \
+--set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/error-count=0' \
+--set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/latency-mean=50' \
+--set 'groups.httpbin.specs.iter8.version=0.13.0' \
+--set 'groups.httpbin.specs.iter8.values.runner=job'
+```
+
+The configuration of the AutoX controller is composed of a *trigger object definition* and a set of *experiment specifications*. In this case, the trigger object is the `httpbin` deployment and there is only one experiment, an HTTP performance test with SLO validation associated with this trigger.
+
+To go into more detail, the configuration is a set of *groups*, and each group is composed of a trigger object definition and a set of *experiment specifications*. This enables AutoX to manage one or more trigger objects, each associated with one or more experiments. In this tutorial, there is only one group named `httpbin` (`groups.httpbin...`), and within that group, there is the trigger object definition (`groups.httpbin.trigger...`) and a single experiment spec named `iter8` (`groups.httpbin.specs.iter8...`). 
+
+The trigger object definition is a combination of the name, namespace, and the group-version-resource (GVR) metadata of the trigger object, in this case `httpbin`, `default`, and GVR `apps`, `deployments`, and `v1`, respectively. 
+
+The experiment is an HTTP SLO validation test on the `httpbin` service that is described in greater detail [here](https://iter8.tools/0.13/getting-started/your-first-experiment/). This Iter8 experiment is composed of three tasks, `ready`, `http`, and `assess`. The `ready` task will ensure that the `httpbin` deployment and service are running. The `http` task will make requests to the specified URL and will collect latency and error-related metrics. Lastly, the `assess` task will ensure that the mean latency is less than 50 milliseconds and the error count is 0. In addition, the runner is set to job as this will be a [single-loop experiment](https://iter8.tools/0.11/getting-started/concepts/#iter8-experiment).
+
+<!-- TODO: describe the default behavior of http task -->
+
+```bash
+helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
+--set 'groups.httpbin.trigger.name=httpbin' \
+--set 'groups.httpbin.trigger.namespace=default' \
+--set 'groups.httpbin.trigger.group=apps' \
+--set 'groups.httpbin.trigger.version=v1' \
+--set 'groups.httpbin.trigger.resource=deployments' \
+--set 'groups.httpbin.specs.iter8.name=iter8' \
+--set 'groups.httpbin.specs.iter8.values.tasks={ready,http,assess}' \
+--set 'groups.httpbin.specs.iter8.values.ready.deploy=httpbin' \
+--set 'groups.httpbin.specs.iter8.values.ready.service=httpbin' \
+--set 'groups.httpbin.specs.iter8.values.ready.timeout=60s' \
+--set 'groups.httpbin.specs.iter8.values.http.url=http://httpbin.default/get' \
+--set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/error-count=0' \
+--set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/latency-mean=50' \
 --set 'groups.httpbin.specs.iter8.version=0.13.0' \
 --set 'groups.httpbin.specs.iter8.values.runner=job'
 ```
@@ -121,7 +149,76 @@ Check if a new experiment has been launched. Refer to [Observe experiment](#obse
 
 If we were to continue to update the deployment (and change its version label), then AutoX would relaunch the experiment for each such change.
 
+# Multiple endpoints
+
+In the previous section, we described how you can configure 
+
+<!-- ### Remove previous experiment
+
+```bash
+helm delete autox
+``` -->
+
+### Configure AutoX for multiple endpoints
+
+```bash
+  helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
+  --set 'groups.httpbin.trigger.name=httpbin' \
+  --set 'groups.httpbin.trigger.namespace=default' \
+  --set 'groups.httpbin.trigger.group=apps' \
+  --set 'groups.httpbin.trigger.version=v1' \
+  --set 'groups.httpbin.trigger.resource=deployments' \
+  --set 'groups.httpbin.specs.iter8.name=iter8' \
+  --set 'groups.httpbin.specs.iter8.values.tasks={ready,http,assess}' \
+  --set 'groups.httpbin.specs.iter8.values.ready.deploy=httpbin' \
+  --set 'groups.httpbin.specs.iter8.values.ready.service=httpbin' \
+  --set 'groups.httpbin.specs.iter8.values.ready.timeout=60s' \
+  --set 'groups.httpbin.specs.iter8.values.http.numRequests=200' \
+-  --set 'groups.httpbin.specs.iter8.values.http.url=http://httpbin.default/get' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.url=http://httpbin.default/post' \
+-  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/error-count=0' \
+-  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/latency-mean=50' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.payloadStr=hello' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/error-count=0' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/latency-mean=50' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/error-count=0' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/latency-mean=150' \
+  --set 'groups.httpbin.specs.iter8.version=0.13.0' \
+  --set 'groups.httpbin.specs.iter8.values.runner=job'
+```
+
+Notice that we made changes to both the `http` and `assess` task configurations.
+
 ***
+
+```bash
+  helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
+  --set 'groups.httpbin.trigger.name=httpbin' \
+  --set 'groups.httpbin.trigger.namespace=default' \
+  --set 'groups.httpbin.trigger.group=apps' \
+  --set 'groups.httpbin.trigger.version=v1' \
+  --set 'groups.httpbin.trigger.resource=deployments' \
+  --set 'groups.httpbin.specs.iter8.name=iter8' \
+  --set 'groups.httpbin.specs.iter8.values.tasks={ready,http,assess}' \
+  --set 'groups.httpbin.specs.iter8.values.ready.deploy=httpbin' \
+  --set 'groups.httpbin.specs.iter8.values.ready.service=httpbin' \
+  --set 'groups.httpbin.specs.iter8.values.ready.timeout=60s' \
+  --set 'groups.httpbin.specs.iter8.values.http.numRequests=200' \
+-  --set 'groups.httpbin.specs.iter8.values.http.url=http://httpbin.default/get' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.url=http://httpbin.default/post' \
+-  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/error-count=0' \
+-  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/latency-mean=50' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.payloadStr=hello' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/error-count=0' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/latency-mean=50' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/error-count=0' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/latency-mean=150' \
+  --set 'groups.httpbin.specs.iter8.version=0.13.0' \
+  --set 'groups.httpbin.specs.iter8.values.runner=job'
+```
+
 
 # Automatic performance testing for HTTP applications
 
@@ -158,3 +255,175 @@ helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1
 ### Continuous and automated experimentation
 
 ### Observe new experiment
+
+
+
+Base
+
+```bash
+helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
+--set 'groups.httpbin.trigger.name=httpbin' \
+--set 'groups.httpbin.trigger.namespace=default' \
+--set 'groups.httpbin.trigger.group=apps' \
+--set 'groups.httpbin.trigger.version=v1' \
+--set 'groups.httpbin.trigger.resource=deployments' \
+--set 'groups.httpbin.specs.iter8.name=iter8' \
+--set 'groups.httpbin.specs.iter8.values.tasks={ready,http,assess}' \
+--set 'groups.httpbin.specs.iter8.values.ready.deploy=httpbin' \
+--set 'groups.httpbin.specs.iter8.values.ready.service=httpbin' \
+--set 'groups.httpbin.specs.iter8.values.ready.timeout=60s' \
+--set 'groups.httpbin.specs.iter8.values.http.url=http://httpbin.default/get' \
+--set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/error-count=0' \
+--set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/latency-mean=50' \
+--set 'groups.httpbin.specs.iter8.version=0.13.0' \
+--set 'groups.httpbin.specs.iter8.values.runner=job'
+```
+
+Override default
+
+```bash
+  helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
+  --set 'groups.httpbin.trigger.name=httpbin' \
+  --set 'groups.httpbin.trigger.namespace=default' \
+  --set 'groups.httpbin.trigger.group=apps' \
+  --set 'groups.httpbin.trigger.version=v1' \
+  --set 'groups.httpbin.trigger.resource=deployments' \
+  --set 'groups.httpbin.specs.iter8.name=iter8' \
+  --set 'groups.httpbin.specs.iter8.values.tasks={ready,http,assess}' \
+  --set 'groups.httpbin.specs.iter8.values.ready.deploy=httpbin' \
+  --set 'groups.httpbin.specs.iter8.values.ready.service=httpbin' \
+  --set 'groups.httpbin.specs.iter8.values.ready.timeout=60s' \
+  --set 'groups.httpbin.specs.iter8.values.http.url=http://httpbin.default/get' \
++  --set 'groups.httpbin.specs.iter8.values.http.qps=10' \
+  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/error-count=0' \
+  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/latency-mean=50' \
+  --set 'groups.httpbin.specs.iter8.version=0.13.0' \
+  --set 'groups.httpbin.specs.iter8.values.runner=job'
+```
+
+Single endpoint
+
+```bash
+  helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
+  --set 'groups.httpbin.trigger.name=httpbin' \
+  --set 'groups.httpbin.trigger.namespace=default' \
+  --set 'groups.httpbin.trigger.group=apps' \
+  --set 'groups.httpbin.trigger.version=v1' \
+  --set 'groups.httpbin.trigger.resource=deployments' \
+  --set 'groups.httpbin.specs.iter8.name=iter8' \
+  --set 'groups.httpbin.specs.iter8.values.tasks={ready,http,assess}' \
+  --set 'groups.httpbin.specs.iter8.values.ready.deploy=httpbin' \
+  --set 'groups.httpbin.specs.iter8.values.ready.service=httpbin' \
+  --set 'groups.httpbin.specs.iter8.values.ready.timeout=60s' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/error-count=0' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/latency-mean=50' \
+  --set 'groups.httpbin.specs.iter8.version=0.13.0' \
+  --set 'groups.httpbin.specs.iter8.values.runner=job'
+```
+
+Multiple endpoints
+
+```bash
+  helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
+  --set 'groups.httpbin.trigger.name=httpbin' \
+  --set 'groups.httpbin.trigger.namespace=default' \
+  --set 'groups.httpbin.trigger.group=apps' \
+  --set 'groups.httpbin.trigger.version=v1' \
+  --set 'groups.httpbin.trigger.resource=deployments' \
+  --set 'groups.httpbin.specs.iter8.name=iter8' \
+  --set 'groups.httpbin.specs.iter8.values.tasks={ready,http,assess}' \
+  --set 'groups.httpbin.specs.iter8.values.ready.deploy=httpbin' \
+  --set 'groups.httpbin.specs.iter8.values.ready.service=httpbin' \
+  --set 'groups.httpbin.specs.iter8.values.ready.timeout=60s' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.url=http://httpbin.default/post' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.payloadStr=hello' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/error-count=0' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/latency-mean=50' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/error-count=0' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/latency-mean=150' \
+  --set 'groups.httpbin.specs.iter8.version=0.13.0' \
+  --set 'groups.httpbin.specs.iter8.values.runner=job'
+```
+
+Multiple endpoints with override default
+
+```bash
+  helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
+  --set 'groups.httpbin.trigger.name=httpbin' \
+  --set 'groups.httpbin.trigger.namespace=default' \
+  --set 'groups.httpbin.trigger.group=apps' \
+  --set 'groups.httpbin.trigger.version=v1' \
+  --set 'groups.httpbin.trigger.resource=deployments' \
+  --set 'groups.httpbin.specs.iter8.name=iter8' \
+  --set 'groups.httpbin.specs.iter8.values.tasks={ready,http,assess}' \
+  --set 'groups.httpbin.specs.iter8.values.ready.deploy=httpbin' \
+  --set 'groups.httpbin.specs.iter8.values.ready.service=httpbin' \
+  --set 'groups.httpbin.specs.iter8.values.ready.timeout=60s' \
++  --set 'groups.httpbin.specs.iter8.values.http.qps=10' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.url=http://httpbin.default/post' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.payloadStr=hello' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/error-count=0' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/latency-mean=50' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/error-count=0' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/latency-mean=150' \
+  --set 'groups.httpbin.specs.iter8.version=0.13.0' \
+  --set 'groups.httpbin.specs.iter8.values.runner=job'
+```
+
+Multiple endpoints with override default and override endpoint
+
+```bash
+  helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
+  --set 'groups.httpbin.trigger.name=httpbin' \
+  --set 'groups.httpbin.trigger.namespace=default' \
+  --set 'groups.httpbin.trigger.group=apps' \
+  --set 'groups.httpbin.trigger.version=v1' \
+  --set 'groups.httpbin.trigger.resource=deployments' \
+  --set 'groups.httpbin.specs.iter8.name=iter8' \
+  --set 'groups.httpbin.specs.iter8.values.tasks={ready,http,assess}' \
+  --set 'groups.httpbin.specs.iter8.values.ready.deploy=httpbin' \
+  --set 'groups.httpbin.specs.iter8.values.ready.service=httpbin' \
+  --set 'groups.httpbin.specs.iter8.values.ready.timeout=60s' \
++  --set 'groups.httpbin.specs.iter8.values.http.qps=10' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.qps=10' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.url=http://httpbin.default/post' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.payloadStr=hello' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/error-count=0' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/latency-mean=50' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/error-count=0' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/latency-mean=150' \
+  --set 'groups.httpbin.specs.iter8.version=0.13.0' \
+  --set 'groups.httpbin.specs.iter8.values.runner=job'
+```
+
+Multiple endpoints with override endpoint
+
+```bash
+  helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
+  --set 'groups.httpbin.trigger.name=httpbin' \
+  --set 'groups.httpbin.trigger.namespace=default' \
+  --set 'groups.httpbin.trigger.group=apps' \
+  --set 'groups.httpbin.trigger.version=v1' \
+  --set 'groups.httpbin.trigger.resource=deployments' \
+  --set 'groups.httpbin.specs.iter8.name=iter8' \
+  --set 'groups.httpbin.specs.iter8.values.tasks={ready,http,assess}' \
+  --set 'groups.httpbin.specs.iter8.values.ready.deploy=httpbin' \
+  --set 'groups.httpbin.specs.iter8.values.ready.service=httpbin' \
+  --set 'groups.httpbin.specs.iter8.values.ready.timeout=60s' \
++  --set 'groups.httpbin.specs.iter8.values.http.qps=10' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.qps=10' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.url=http://httpbin.default/post' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.qps=15' \
++  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.payloadStr=hello' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/error-count=0' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/latency-mean=50' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/error-count=0' \
++  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/latency-mean=150' \
+  --set 'groups.httpbin.specs.iter8.version=0.13.0' \
+  --set 'groups.httpbin.specs.iter8.values.runner=job'
+```
