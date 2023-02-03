@@ -4,7 +4,7 @@ First, we will describe the basic usage
 
 Later on, we will also describe how modify the configuration in order to do automatically launch similar tests for a gRPC application.
 
-# Automatic performance testing for single endpoint
+# Automatic performance testing for multiple endpoints
 
 ### Download Iter8 CLI
 
@@ -61,9 +61,14 @@ helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1
 --set 'groups.httpbin.specs.iter8.values.ready.deploy=httpbin' \
 --set 'groups.httpbin.specs.iter8.values.ready.service=httpbin' \
 --set 'groups.httpbin.specs.iter8.values.ready.timeout=60s' \
---set 'groups.httpbin.specs.iter8.values.http.url=http://httpbin.default/get' \
---set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/error-count=0' \
---set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/latency-mean=50' \
+--set 'groups.httpbin.specs.iter8.values.http.numRequests=200' \
+--set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
+--set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.url=http://httpbin.default/post' \
+--set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.payloadStr=hello' \
+--set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/error-count=0' \
+--set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/latency-mean=50' \
+--set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/error-count=0' \
+--set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/latency-mean=150' \
 --set 'groups.httpbin.specs.iter8.version=0.13.0' \
 --set 'groups.httpbin.specs.iter8.values.runner=job'
 ```
@@ -77,25 +82,6 @@ The trigger object definition is a combination of the name, namespace, and the g
 The experiment is an HTTP SLO validation test on the `httpbin` service that is described in greater detail [here](https://iter8.tools/0.13/getting-started/your-first-experiment/). This Iter8 experiment is composed of three tasks, `ready`, `http`, and `assess`. The `ready` task will ensure that the `httpbin` deployment and service are running. The `http` task will make requests to the specified URL and will collect latency and error-related metrics. Lastly, the `assess` task will ensure that the mean latency is less than 50 milliseconds and the error count is 0. In addition, the runner is set to job as this will be a [single-loop experiment](https://iter8.tools/0.11/getting-started/concepts/#iter8-experiment).
 
 <!-- TODO: describe the default behavior of http task -->
-
-```bash
-helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
---set 'groups.httpbin.trigger.name=httpbin' \
---set 'groups.httpbin.trigger.namespace=default' \
---set 'groups.httpbin.trigger.group=apps' \
---set 'groups.httpbin.trigger.version=v1' \
---set 'groups.httpbin.trigger.resource=deployments' \
---set 'groups.httpbin.specs.iter8.name=iter8' \
---set 'groups.httpbin.specs.iter8.values.tasks={ready,http,assess}' \
---set 'groups.httpbin.specs.iter8.values.ready.deploy=httpbin' \
---set 'groups.httpbin.specs.iter8.values.ready.service=httpbin' \
---set 'groups.httpbin.specs.iter8.values.ready.timeout=60s' \
---set 'groups.httpbin.specs.iter8.values.http.url=http://httpbin.default/get' \
---set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/error-count=0' \
---set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/latency-mean=50' \
---set 'groups.httpbin.specs.iter8.version=0.13.0' \
---set 'groups.httpbin.specs.iter8.values.runner=job'
-```
 
 ### Observe experiment
 
@@ -149,84 +135,41 @@ Check if a new experiment has been launched. Refer to [Observe experiment](#obse
 
 If we were to continue to update the deployment (and change its version label), then AutoX would relaunch the experiment for each such change.
 
-# Multiple endpoints
+### Additional methods of configuration
 
-In the previous section, we described how you can configure 
+The `http` task has additional [parameters](https://iter8.tools/0.13/user-guide/tasks/http/#parameters) that the user can set.
 
-<!-- ### Remove previous experiment
+For example, the `qps` (queries-per-second) has a default value of `8`. There are multiple ways of utilizing this parameter in the context of multiple endpoints.
 
-```bash
-helm delete autox
-``` -->
-
-### Configure AutoX for multiple endpoints
+In the following example, the default value is used.
 
 ```bash
-  helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
-  --set 'groups.httpbin.trigger.name=httpbin' \
-  --set 'groups.httpbin.trigger.namespace=default' \
-  --set 'groups.httpbin.trigger.group=apps' \
-  --set 'groups.httpbin.trigger.version=v1' \
-  --set 'groups.httpbin.trigger.resource=deployments' \
-  --set 'groups.httpbin.specs.iter8.name=iter8' \
-  --set 'groups.httpbin.specs.iter8.values.tasks={ready,http,assess}' \
-  --set 'groups.httpbin.specs.iter8.values.ready.deploy=httpbin' \
-  --set 'groups.httpbin.specs.iter8.values.ready.service=httpbin' \
-  --set 'groups.httpbin.specs.iter8.values.ready.timeout=60s' \
-  --set 'groups.httpbin.specs.iter8.values.http.numRequests=200' \
--  --set 'groups.httpbin.specs.iter8.values.http.url=http://httpbin.default/get' \
-+  --set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
-+  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.url=http://httpbin.default/post' \
--  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/error-count=0' \
--  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/latency-mean=50' \
-+  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.payloadStr=hello' \
-+  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/error-count=0' \
-+  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/latency-mean=50' \
-+  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/error-count=0' \
-+  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/latency-mean=150' \
-  --set 'groups.httpbin.specs.iter8.version=0.13.0' \
-  --set 'groups.httpbin.specs.iter8.values.runner=job'
+--set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
+--set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.url=http://httpbin.default/post' \
+--set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.payloadStr=hello' \
 ```
 
-Notice that we made changes to both the `http` and `assess` task configurations.
-
-***
+The following example, the default value is overridden to `10`. Both endpoints will be queried at 10 queries-per-second.
 
 ```bash
-  helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
-  --set 'groups.httpbin.trigger.name=httpbin' \
-  --set 'groups.httpbin.trigger.namespace=default' \
-  --set 'groups.httpbin.trigger.group=apps' \
-  --set 'groups.httpbin.trigger.version=v1' \
-  --set 'groups.httpbin.trigger.resource=deployments' \
-  --set 'groups.httpbin.specs.iter8.name=iter8' \
-  --set 'groups.httpbin.specs.iter8.values.tasks={ready,http,assess}' \
-  --set 'groups.httpbin.specs.iter8.values.ready.deploy=httpbin' \
-  --set 'groups.httpbin.specs.iter8.values.ready.service=httpbin' \
-  --set 'groups.httpbin.specs.iter8.values.ready.timeout=60s' \
-  --set 'groups.httpbin.specs.iter8.values.http.numRequests=200' \
--  --set 'groups.httpbin.specs.iter8.values.http.url=http://httpbin.default/get' \
-+  --set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
-+  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.url=http://httpbin.default/post' \
--  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/error-count=0' \
--  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/latency-mean=50' \
-+  --set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.payloadStr=hello' \
-+  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/error-count=0' \
-+  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getit/latency-mean=50' \
-+  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/error-count=0' \
-+  --set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/postit/latency-mean=150' \
-  --set 'groups.httpbin.specs.iter8.version=0.13.0' \
-  --set 'groups.httpbin.specs.iter8.values.runner=job'
+--set 'groups.httpbin.specs.iter8.values.http.qps=10' \
+--set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
+--set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.url=http://httpbin.default/post' \
+--set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.payloadStr=hello' \
+```
+
+The following example, the default value is overridden to `10`, but one of `getit` endpoint has overridden that value to `15`. `getit` will be queried at 15 queries-per-second whereas `postit` will be queried at 15 queries-per-second whereas .
+
+```bash
+--set 'groups.httpbin.specs.iter8.values.http.qps=10' \
+--set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
+--set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.qps=15' \
+--set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.url=http://httpbin.default/post' \
+--set 'groups.httpbin.specs.iter8.values.http.endpoints.postit.payloadStr=hello' \
 ```
 
 
-# Automatic performance testing for HTTP applications
-
-### Deploy gRPC application
-
-### Apply version label
-
-### Setup Kubernetes cluster with Iter8 AutoX
+gRPC
 
 ```bash
 helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
@@ -249,12 +192,6 @@ helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1
 --set 'groups.hello.specs.iter8.version=0.13.0' \
 --set 'groups.hello.specs.iter8.values.runner=job'
 ```
-
-### Observe experiment
-
-### Continuous and automated experimentation
-
-### Observe new experiment
 
 
 
