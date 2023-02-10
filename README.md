@@ -147,12 +147,9 @@ First, we will create an example gRPC server.
 We will use the [route guide example](https://github.com/grpc/grpc-go/tree/master/examples/route_guide) provided by gRPC.
 
 ```bash
-kubectl create deployment grpc-example  --image=golang --port=81 -- git clone -b v1.52.0 --depth 1 https://github.com/grpc/grpc-go; cd grpc-go/examples/route_guide; go run server/server.go
+kubectl create deployment grpc-example  --image=golang --port=81 -- bash -c "git clone -b v1.52.0 --depth 1 https://github.com/grpc/grpc-go; cd grpc-go/examples/route_guide; go run server/server.go"
 kubectl expose deployment grpc-example --port=81
 ```
-
-kubectl create deployment grpc-example  --image=golang --port=81 -- git clone -b v1.52.0 --depth 1 https://github.com/grpc/grpc-go && cd grpc-go/examples/route_guide && go run server/server.go
-
 
 <!-- simple
 ```bash
