@@ -263,3 +263,21 @@ iter8 k delete
 kubectl delete svc/routeguide
 kubectl delete deploy/routeguide
 ```
+
+### More things you can do
+
+In this article, we show how you can automate performance testing for both HTTP and gRPC. The first thing you should consider is trying it out on your own HTTP and gRPC clusters. In order to do this, recall that you need to specify a trigger object, ensure the trigger object has a version label, and configure Iter8 with the appropriate performance tests to run.
+
+In the tutorials, we utilized the `http` and `grpc` tasks. Both of these tasks can be augmented in a number of ways, such as adding headers, providing a payload, or modulating the query rate. To learn more, see [here](https://iter8.tools/0.13/user-guide/tasks/http/) for the documentation of the `http` task and [here](https://iter8.tools/0.13/user-guide/tasks/grpc/) for the documentation of the `grpc` task.
+
+AutoX is designed to use any Kubernetes resource object (including those with a custom resource type) as a trigger object in AutoX. For example, the trigger object can be a Knative service, a KServe inference service, or a Seldon deployment.
+
+Furthermore, you can add additional tasks that ship out-of-the-box with Iter8, in order to enrich the experiments. For example, you can add a `slack` task so that your experiment results will be posted on Slack. That way, you can automatically have the lastest performance statistics after every update. Here is the [documentation](https://iter8.tools/0.13/user-guide/tasks/slack/) for the `slack` task as well as a [tutorial](https://iter8.tools/0.13/tutorials/integrations/slack/) for using the Slack task.
+
+You can also automate experiments that are not from Iter8. For example, a [Litmus Chaos chaos experiment](https://github.com/iter8-tools/hub/tree/8e40c740a33afba4afd5623588128da49b7f08f1/charts/litmuschaos) is available on Iter8 hub, which can also be configured with AutoX.
+
+Lastly, recall that you can provide multiple groups and experiment specs so AutoX can launch and manage a whole suite of experiments for multiple Kubernetes applications and namespaces.
+
+### Takeaways
+
+Iter8 is a powerful performance testing tool for your Kubernetes applications, and now you can configure Iter8 in a delarative manner so that you can it automatically test your applications as soon as you update them. Configuring AutoX is straightforward, and just requires specifying a trigger Kubernetes resource object and the experiments you want to associated with this trigger object. Please see the [Iter8 documentation](https://iter8.tools) for more information all the other things you can do with Iter8! You can engage with the Iter8 community on [Slack](https://join.slack.com/t/iter8-tools/shared_invite/zt-awl2se8i-L0pZCpuHntpPejxzLicbmw) and [GitHub](https://github.com/iter8-tools/iter8).
