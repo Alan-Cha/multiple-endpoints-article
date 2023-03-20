@@ -26,7 +26,7 @@ See [here](https://argo-cd.readthedocs.io/en/stable/getting_started/#1-install-a
 
 ### Deploy HTTP application
 
-Now, we will create an `httpbin` deployment and service. The `httpbin` deployment will become the trigger object, meaning AutoX will respond to changes to this Kubernetes object.
+Now, we will create an `httpbin` deployment and service. The `httpbin` deployment will later become the trigger object, meaning AutoX will respond to changes to this Kubernetes object.
 
 ```bash
 kubectl create deployment httpbin --image=kennethreitz/httpbin --port=80
@@ -43,7 +43,7 @@ kubectl label deployment httpbin app.kubernetes.io/version=1.0.0
 
 ### Configure AutoX
 
-Next, we will configure and install the AutoX controller.
+Following, we will configure and install the AutoX controller.
 
 ```bash
 helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
@@ -78,7 +78,7 @@ To go into more detail, the configuration is composed of a set of *groups*, and 
 
 The trigger object definition is a combination of the name, namespace, and the group-version-resource (GVR) metadata of the trigger object, in this case `httpbin`, `default`, and GVR `apps`, `deployments`, and `v1`, respectively. 
 
-The experiment is an HTTP SLO validation test on the `httpbin` service that is described in greater detail [here](https://iter8.tools/0.13/getting-started/your-first-experiment/). This Iter8 experiment is composed of three tasks, `ready`, `http`, and `assess`. The `ready` task will ensure that the `httpbin` deployment and service are running. The `http` task will generate load for the specified endpoints, `get`, `getAnything`, and `post`, and collect latency and error-related metrics. Lastly, the `assess` task will ensure that the error count is 0 for each endpoint and the mean latency is less than 50, 75, and 100 milliseconds for the `get`, `getAnything`, and `post`, respectively. In addition, the runner is set to job as this will be a [single-loop experiment](https://iter8.tools/0.11/getting-started/concepts/#iter8-experiment).
+The experiment is an HTTP SLO validation test on the `httpbin` service that is described in greater detail [here](https://iter8.tools/0.13/getting-started/your-first-experiment/). This Iter8 experiment is composed of three tasks, `ready`, `http`, and `assess`. The `ready` task will ensure that the `httpbin` deployment and service are running. The `http` task will generate load for the specified endpoints, `get`, `getAnything`, and `post`, and collect latency and error-related metrics. Lastly, the `assess` task will ensure that the error count is 0 for each endpoint and the mean latency is less than 50, 75, and 100 milliseconds for `get`, `getAnything`, and `post`, respectively. In addition, the runner is set to job as this will be a [single-loop experiment](https://iter8.tools/0.11/getting-started/concepts/#iter8-experiment).
 
 ### Observe experiment
 
@@ -132,77 +132,134 @@ Check if a new experiment has been launched. Refer to [Observe experiment](#obse
 
 If we were to continue to update the deployment (and change its version label), then AutoX would relaunch the experiment for each such change.
 
-***
+### Cleanup
+
+Remove the Iter8 experiment and the sample app from the Kubernetes cluster and the local Iter8 `charts` folder.
+
+```shell
+iter8 k delete
+kubectl delete svc/httpbin
+kubectl delete deploy/httpbin
+```
 
 # Automatic performance testing for multiple gRPC endpoints
 
-First, we will create an example gRPC server. 
+Now that we have described how you can automatically conduct performance tests for HTTP endpoints, we will do the same for gRPC endpoints.
 
-We will use the [route guide example](https://github.com/grpc/grpc-go/tree/master/examples/route_guide) provided by gRPC.
+[Download Iter8 CLI](#download-iter8-cli) and [Setup Kubernetes cluster with ArgoCD](#setup-kubernetes-cluster-with-argocd) if you have not done so already.
+
+### Deploy gRPC application
+
+We will create a `routeguide` deployment and service, similar to the `httpbin` deployment and service in the HTTP tutorial. The `routeguide` deployment will later become the trigger object, meaning AutoX will respond to changes to this Kubernetes object.
 
 ```bash
 kubectl create deployment routeguide --image=golang --port=50051 \
--- bash -c "git clone -b v1.52.0 --depth 1 https://github.com/grpc/grpc-go; cd grpc-go/examples/route_guide; go run server/server.go"
+-- bash -c "git clone -b v0.13.13 --depth 1 https://github.com/iter8-tools/docs; cd docs/samples/route_guide; go run server/server.go"
 kubectl expose deployment routeguide --port=50051
+```
+
+### Apply version label
+
+Next, we will assign `routeguide` deployment the `app.kubernetes.io/version` label (version label). As mentioned in the HTTP tutorial, AutoX will relaunch experiments whenever this version label is modified.
+
+```bash
+kubectl label deployment routeguide app.kubernetes.io/version=1.0.0
 ```
 
 ### Configure AutoX
 
+Following, we will configure and install the AutoX controller.
+
 ```bash
 helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
---set 'groups.grpc-example.trigger.name=grpc-example' \
---set 'groups.grpc-example.trigger.namespace=default' \
---set 'groups.grpc-example.trigger.group=apps' \
---set 'groups.grpc-example.trigger.version=v1' \
---set 'groups.grpc-example.trigger.resource=deployments' \
---set 'groups.grpc-example.specs.iter8.name=iter8' \
---set 'groups.grpc-example.specs.iter8.values.tasks={ready,http,assess}' \
---set 'groups.grpc-example.specs.iter8.values.ready.deploy=grpc-example' \
---set 'groups.grpc-example.specs.iter8.values.ready.service=grpc-example' \
---set 'groups.grpc-example.specs.iter8.values.ready.timeout=60s' \
---set 'groups.grpc-example.specs.iter8.values.grpc.host=grpc-example.default:81' \
---set 'groups.grpc-example.specs.iter8.values.grpc.endpoints.getFeature.call=routeguide.RouteGuide.GetFeature' \
---set 'groups.grpc-example.specs.iter8.values.grpc.endpoints.getFeature.dataURL=...' \
---set 'groups.grpc-example.specs.iter8.values.grpc.endpoints.listFeatures.call=routeguide.RouteGuide.ListFeatures' \
---set 'groups.grpc-example.specs.iter8.values.grpc.endpoints.listFeatures.dataURL=...' \
---set 'groups.grpc-example.specs.iter8.values.grpc.protoURL=https://raw.githubusercontent.com/grpc/grpc-go/master/examples/route_guide/routeguide/route_guide.proto' \
---set 'groups.grpc-example.specs.iter8.values.assess.SLOs.upper.grpc/getFeature/error-rate=0' \
---set 'groups.grpc-example.specs.iter8.values.assess.SLOs.upper.grpc/getFeature/latency-mean=100' \
---set 'groups.grpc-example.specs.iter8.values.assess.SLOs.upper.grpc/listFeatures/error-rate=0' \
---set 'groups.grpc-example.specs.iter8.values.assess.SLOs.upper.grpc/listFeatures/latency-mean=100' \
---set 'groups.grpc-example.specs.iter8.version=0.13.0' \
---set 'groups.grpc-example.specs.iter8.values.runner=job'
+--set 'groups.routeguide.trigger.name=routeguide' \
+--set 'groups.routeguide.trigger.namespace=default' \
+--set 'groups.routeguide.trigger.group=apps' \
+--set 'groups.routeguide.trigger.version=v1' \
+--set 'groups.routeguide.trigger.resource=deployments' \
+--set 'groups.routeguide.specs.iter8.name=iter8' \
+--set 'groups.routeguide.specs.iter8.values.tasks={ready,http,assess}' \
+--set 'groups.routeguide.specs.iter8.values.ready.deploy=routeguide' \
+--set 'groups.routeguide.specs.iter8.values.ready.service=routeguide' \
+--set 'groups.routeguide.specs.iter8.values.ready.timeout=60s' \
+--set 'groups.routeguide.specs.iter8.values.grpc.host=routeguide.default:81' \
+--set 'groups.routeguide.specs.iter8.values.grpc.endpoints.getFeature.call=routeguide.RouteGuide.GetFeature' \
+--set 'groups.routeguide.specs.iter8.values.grpc.endpoints.getFeature.dataURL=...' \
+--set 'groups.routeguide.specs.iter8.values.grpc.endpoints.listFeatures.call=routeguide.RouteGuide.ListFeatures' \
+--set 'groups.routeguide.specs.iter8.values.grpc.endpoints.listFeatures.dataURL=...' \
+--set 'groups.routeguide.specs.iter8.values.grpc.protoURL=https://raw.githubusercontent.com/grpc/grpc-go/master/examples/route_guide/routeguide/route_guide.proto' \
+--set 'groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc/getFeature/error-count=0' \
+--set 'groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc/getFeature/latency-mean=50' \
+--set 'groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc/listFeatures/error-count=0' \
+--set 'groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc/listFeatures/latency-mean=100' \
+--set 'groups.routeguide.specs.iter8.version=0.13.0' \
+--set 'groups.routeguide.specs.iter8.values.runner=job'
 ```
 
-<!-- ### Additional methods of configuration
+The biggest difference between this configuration and the configuration from the HTTP tutorial is the `grpc` task, which has replaced the `http` task. In this example, we specify one group name `routeguide` (`groups.routeguide`)
 
-The `http` task has additional [parameters](https://iter8.tools/0.13/user-guide/tasks/http/#parameters) that the user can set.
+In this tutorial, there is only one group named `routeguide` (`groups.routeguide`), and within that group, there is the trigger object definition (`groups.routeguide.trigger...`) and a single experiment spec named `iter8` (`groups.routeguide.specs.iter8...`). 
 
-For example, the `qps` (queries-per-second) has a default value of `8`. There are multiple ways of utilizing this parameter in the context of multiple endpoints.
+The trigger object definition is a combination of the name, namespace, and the group-version-resource (GVR) metadata of the trigger object, in this case `routeguide`, `default`, and GVR `apps`, `deployments`, and `v1`, respectively.
 
-In the following example, the default value is used.
+The experiment is a gRPC SLO validation test on the `routeguide` service that is described in greater detail [here](https://iter8.tools/0.13/tutorials/load-test-grpc/). This Iter8 experiment is composed of three tasks, `ready`, `grpc`, and `assess`. The `ready` task will ensure that the `routeguide` deployment and service are running. The `grpc` task will generate load for the specified endpoints, `getFeature` and `listFeatures`, and collect latency and error-related metrics. Lastly, the `assess` task will ensure that the error count is 0 for both endpoints and the mean latency is less than 50 and 100 milliseconds for `getFeature` and `listFeatures`, respectively. In addition, the runner is set to job as this will be a [single-loop experiment](https://iter8.tools/0.11/getting-started/concepts/#iter8-experiment).
+
+### Observe experiment
+
+After starting AutoX, the gRPC SLO validation test should quickly follow. The *experiment group* for this experiment is `autox-routeguide-iter8`.
 
 ```bash
---set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
---set 'groups.httpbin.specs.iter8.values.http.endpoints.post.url=http://httpbin.default/post' \
---set 'groups.httpbin.specs.iter8.values.http.endpoints.post.payloadStr=hello' \
+iter8 k assert -c completed -c nofailure -c slos -g autox-routeguide-iter8
 ```
 
-The following example, the default value is overridden to `10`. Both endpoints will be queried at 10 queries-per-second.
-
-```bash
---set 'groups.httpbin.specs.iter8.values.http.qps=10' \
---set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
---set 'groups.httpbin.specs.iter8.values.http.endpoints.post.url=http://httpbin.default/post' \
---set 'groups.httpbin.specs.iter8.values.http.endpoints.post.payloadStr=hello' \
+We can see in the sample output that the test has completed, there were no failures, and all SLOs and conditions were satisfied.
+```
+INFO[2023-01-11 14:43:45] inited Helm config          
+INFO[2023-01-11 14:43:45] experiment completed
+INFO[2023-01-11 14:43:45] experiment has no failure                    
+INFO[2023-01-11 14:43:45] SLOs are satisfied                           
+INFO[2023-01-11 14:43:45] all conditions were satisfied  
 ```
 
-The following example, the default value is overridden to `10`, but one of `getit` endpoint has overridden that value to `15`. `getit` will be queried at 15 queries-per-second whereas `post` will be queried at 15 queries-per-second whereas .
+***
+
+The following command allows you to see the results as a text report.
 
 ```bash
---set 'groups.httpbin.specs.iter8.values.http.qps=10' \
---set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.url=http://httpbin.default/get' \
---set 'groups.httpbin.specs.iter8.values.http.endpoints.getit.qps=15' \
---set 'groups.httpbin.specs.iter8.values.http.endpoints.post.url=http://httpbin.default/post' \
---set 'groups.httpbin.specs.iter8.values.http.endpoints.post.payloadStr=hello' \
-``` -->
+iter8 k report -g autox-routeguide-iter8
+```
+
+You can also produce an HTML report that you can view in the browser.
+
+```bash
+iter8 k report -g autox-routeguide-iter8 -o html > report.html
+```
+
+The HTML report will look similar to the following:
+![HTML report](images/htmlreport.png)
+
+### Continuous and automated experimentation
+
+Now that AutoX is watching the `routeguide` deployment, releasing a new version will relaunch the gRPC SLO validation test. The update must be accompanied by a version label change change; otherwise, AutoX will not do anything.
+
+Again, we will simply change the version label in order to relaunch the test but in the real world, a new version would typically involve a change to the deployment spec (e.g., the container image) as well.
+
+```bash
+kubectl label deployment httpbin app.kubernetes.io/version=2.0.0 --overwrite
+```
+
+### Observe new experiment
+
+Check if a new experiment has been launched. Refer to [Observe experiment](#observe-experiment) for the necessary commands.
+
+If we were to continue to update the deployment (and change its version label), then AutoX would relaunch the experiment for each such change.
+
+### Cleanup
+
+Remove the Iter8 experiment and the sample app from the Kubernetes cluster and the local Iter8 `charts` folder.
+
+```shell
+iter8 k delete
+kubectl delete svc/routeguide
+kubectl delete deploy/routeguide
+```
