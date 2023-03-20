@@ -1,4 +1,4 @@
-With Iter8, you can launch experiments declaratively and imperatively. The focus of this article is to showcase the former by describing how you can configure Iter8 to automatically test an HTTP application whenever you update it and ensure specific endpoints meet latency and error-related SLOs. Later on, we will also describe how to modify the configuration to do the same for gRPC endpoints.
+With Iter8, you can now launch performance tests for your Kubernetes applications declaratively and imperatively. With Iter8, you can automatically test your Kubernetes application whenever you update it and ensure it meets all your SLOs among many other tasks. In this article, we will describe how you can configure Iter8 to automatically launch experiments for an HTTP application and later on, we will also describe how to do the same for a gRPC application.
 
 # Automatic performance testing for multiple HTTP endpoints
 
