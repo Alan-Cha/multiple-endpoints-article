@@ -1,4 +1,6 @@
-With Iter8, you can now launch performance tests for your Kubernetes applications declaratively and imperatively. With Iter8, you can automatically test your Kubernetes application whenever you update it and ensure it meets all your SLOs among many other tasks. In this article, we will describe how you can configure Iter8 to automatically launch experiments for an HTTP application and later on, we will also describe how to do the same for a gRPC application.
+There are many challenges with testing the performance of HTTP and gRPC applications deployed on Kubernetes. For example, there are countless ways to create these applications, ranging from a typical Kubernetes deployment to some kind of custom resource like Knative services, KServe inference services, Seldon deployments, or something entirely different. You may have multiple HTTP endpoints or gRPC methods you would like to ensure are working properly. You may also need to have a warm up period before you can begin testing. Furthermore, you may want to automate the tests so you can get the latest performance data whenever you update your applications.
+
+Iter8 is an open-source Kubernetes release optimizer that makes it easy to ensure that your Kubernetes apps and ML models perform well and maximize business value. Iter8 can handle all of the above concerns and we will show you how. In this article, we will describe how you can configure Iter8 to automatically launch performance testing experiments for an HTTP application and later on, we will also describe how to do the same for a gRPC application.
 
 # Automatic performance testing for multiple HTTP endpoints
 
@@ -47,29 +49,29 @@ Following, we will configure and install the AutoX controller.
 
 ```bash
 helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
---set 'groups.httpbin.trigger.name=httpbin' \
---set 'groups.httpbin.trigger.namespace=default' \
---set 'groups.httpbin.trigger.group=apps' \
---set 'groups.httpbin.trigger.version=v1' \
---set 'groups.httpbin.trigger.resource=deployments' \
---set 'groups.httpbin.specs.iter8.name=iter8' \
---set 'groups.httpbin.specs.iter8.values.tasks={ready,http,assess}' \
---set 'groups.httpbin.specs.iter8.values.ready.deploy=httpbin' \
---set 'groups.httpbin.specs.iter8.values.ready.service=httpbin' \
---set 'groups.httpbin.specs.iter8.values.ready.timeout=60s' \
---set 'groups.httpbin.specs.iter8.values.http.numRequests=200' \
---set 'groups.httpbin.specs.iter8.values.http.endpoints.get.url=http://httpbin.default/get' \
---set 'groups.httpbin.specs.iter8.values.http.endpoints.getAnything.url=http://httpbin.default/anything' \
---set 'groups.httpbin.specs.iter8.values.http.endpoints.post.url=http://httpbin.default/post' \
---set 'groups.httpbin.specs.iter8.values.http.endpoints.post.payloadStr=hello' \
---set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/get/error-count=0' \
---set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/get/latency-mean=50' \
---set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getAnything/error-count=0' \
---set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getAnything/latency-mean=75' \
---set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/post/error-count=0' \
---set 'groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/post/latency-mean=100' \
---set 'groups.httpbin.specs.iter8.version=0.13.0' \
---set 'groups.httpbin.specs.iter8.values.runner=job'
+--set groups.httpbin.trigger.name=httpbin \
+--set groups.httpbin.trigger.namespace=default \
+--set groups.httpbin.trigger.group=apps \
+--set groups.httpbin.trigger.version=v1 \
+--set groups.httpbin.trigger.resource=deployments \
+--set groups.httpbin.specs.iter8.name=iter8 \
+--set "groups.httpbin.specs.iter8.values.tasks={ready,http,assess}" \
+--set groups.httpbin.specs.iter8.values.ready.deploy=httpbin \
+--set groups.httpbin.specs.iter8.values.ready.service=httpbin \
+--set groups.httpbin.specs.iter8.values.ready.timeout=60s \
+--set groups.httpbin.specs.iter8.values.http.numRequests=200 \
+--set groups.httpbin.specs.iter8.values.http.endpoints.get.url=http://httpbin.default/get \
+--set groups.httpbin.specs.iter8.values.http.endpoints.getAnything.url=http://httpbin.default/anything \
+--set groups.httpbin.specs.iter8.values.http.endpoints.post.url=http://httpbin.default/post \
+--set groups.httpbin.specs.iter8.values.http.endpoints.post.payloadStr=hello \
+--set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/get/error-count=0 \
+--set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/get/latency-mean=50 \
+--set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getAnything/error-count=0 \
+--set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getAnything/latency-mean=75 \
+--set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/post/error-count=0 \
+--set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/post/latency-mean=100 \
+--set groups.httpbin.specs.iter8.version=0.13.0 \
+--set groups.httpbin.specs.iter8.values.runner=j \
 ```
 
 The AutoX controller configuration is composed of a *trigger object definition* and a set of *experiment specifications*. In this case, the trigger object is the `httpbin` deployment and there is only one experiment, an HTTP performance test with SLO validation associated with this trigger.
@@ -172,28 +174,29 @@ Following, we will configure and install the AutoX controller.
 
 ```bash
 helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
---set 'groups.routeguide.trigger.name=routeguide' \
---set 'groups.routeguide.trigger.namespace=default' \
---set 'groups.routeguide.trigger.group=apps' \
---set 'groups.routeguide.trigger.version=v1' \
---set 'groups.routeguide.trigger.resource=deployments' \
---set 'groups.routeguide.specs.iter8.name=iter8' \
---set 'groups.routeguide.specs.iter8.values.tasks={ready,http,assess}' \
---set 'groups.routeguide.specs.iter8.values.ready.deploy=routeguide' \
---set 'groups.routeguide.specs.iter8.values.ready.service=routeguide' \
---set 'groups.routeguide.specs.iter8.values.ready.timeout=60s' \
---set 'groups.routeguide.specs.iter8.values.grpc.host=routeguide.default:81' \
---set 'groups.routeguide.specs.iter8.values.grpc.endpoints.getFeature.call=routeguide.RouteGuide.GetFeature' \
---set 'groups.routeguide.specs.iter8.values.grpc.endpoints.getFeature.dataURL=...' \
---set 'groups.routeguide.specs.iter8.values.grpc.endpoints.listFeatures.call=routeguide.RouteGuide.ListFeatures' \
---set 'groups.routeguide.specs.iter8.values.grpc.endpoints.listFeatures.dataURL=...' \
---set 'groups.routeguide.specs.iter8.values.grpc.protoURL=https://raw.githubusercontent.com/grpc/grpc-go/master/examples/route_guide/routeguide/route_guide.proto' \
---set 'groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc/getFeature/error-count=0' \
---set 'groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc/getFeature/latency-mean=50' \
---set 'groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc/listFeatures/error-count=0' \
---set 'groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc/listFeatures/latency-mean=100' \
---set 'groups.routeguide.specs.iter8.version=0.13.0' \
---set 'groups.routeguide.specs.iter8.values.runner=job'
+--set groups.routeguide.trigger.name=routeguide \
+--set groups.routeguide.trigger.namespace=default \
+--set groups.routeguide.trigger.group=apps \
+--set groups.routeguide.trigger.version=v1 \
+--set groups.routeguide.trigger.resource=deployments \
+--set groups.routeguide.specs.iter8.name=iter8 \
+--set "groups.routeguide.specs.iter8.values.tasks={ready,http,assess}" \
+--set groups.routeguide.specs.iter8.values.ready.deploy=routeguide \
+--set groups.routeguide.specs.iter8.values.ready.service=routeguide \
+--set groups.routeguide.specs.iter8.values.ready.timeout=60s \
+--set groups.routeguide.specs.iter8.values.grpc.host=routeguide.default:50051 \
+--set groups.routeguide.specs.iter8.values.grpc.host=routeguide.default:81 \
+--set groups.routeguide.specs.iter8.values.grpc.endpoints.getFeature.call=routeguide.RouteGuide.GetFeature \
+--set groups.routeguide.specs.iter8.values.grpc.endpoints.getFeature.dataURL=https://raw.githubusercontent.com/iter8-tools/docs/v0.13.13/samples/grpc-payload/unary.json \
+--set groups.routeguide.specs.iter8.values.grpc.endpoints.listFeatures.call=routeguide.RouteGuide.ListFeatures \
+--set groups.routeguide.specs.iter8.values.grpc.endpoints.listFeature.dataURL=https://raw.githubusercontent.com/iter8-tools/docs/v0.13.13/samples/grpc-payload/server.json \
+--set groups.routeguide.specs.iter8.values.grpc.protoURL=https://raw.githubusercontent.com/iter8-tools/docs/v0.13.13/samples/route_guide/routeguide/route_guide.proto \
+--set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc/getFeature/error-count=0 \
+--set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc/getFeature/latency-mean=50 \
+--set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc/listFeatures/error-count=0 \
+--set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc/listFeatures/latency-mean=100 \
+--set groups.routeguide.specs.iter8.version=0.13.0 \
+--set groups.routeguide.specs.iter8.values.runner=job
 ```
 
 The biggest difference between this configuration and the configuration from the HTTP tutorial is the `grpc` task, which has replaced the `http` task. In this example, we specify one group name `routeguide` (`groups.routeguide`)
