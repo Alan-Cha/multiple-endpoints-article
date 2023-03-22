@@ -4,7 +4,7 @@ There are many challenges in testing the performance of Kubernetes applications 
 
 Iter8, an open-source Kubernetes release optimizer, was created with these issues in mind and seeks to make performance testing for Kubernetes applications and ML models straightforward and easy. Iter8 can handle previously mentioned concerns and we will show you how. In this article, we will describe how you can configure Iter8 to automatically launch performance testing experiments for an HTTP application and later on, we will also describe how to do the same for a gRPC application.
 
-![Iter8](autox.png)
+![Iter8](images/autox.png)
 
 # Automatic performance testing for multiple HTTP endpoints
 
