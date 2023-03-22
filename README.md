@@ -64,6 +64,7 @@ helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1
 --set groups.httpbin.specs.iter8.values.ready.service=httpbin \
 --set groups.httpbin.specs.iter8.values.ready.timeout=60s \
 --set groups.httpbin.specs.iter8.values.http.numRequests=200 \
+--set groups.httpbin.specs.iter8.values.http.warmupDuration=5s \
 --set groups.httpbin.specs.iter8.values.http.endpoints.get.url=http://httpbin.default/get \
 --set groups.httpbin.specs.iter8.values.http.endpoints.getAnything.url=http://httpbin.default/anything \
 --set groups.httpbin.specs.iter8.values.http.endpoints.post.url=http://httpbin.default/post \
@@ -84,7 +85,7 @@ To go into more detail, the configuration is composed of a set of *groups*, and 
 
 The trigger object definition is a combination of the name, namespace, and the group-version-resource (GVR) metadata of the trigger object, in this case `httpbin`, `default`, and GVR `apps`, `deployments`, and `v1`, respectively. 
 
-The experiment is an HTTP SLO validation test on the `httpbin` service that is described in greater detail [here](https://iter8.tools/0.13/getting-started/your-first-experiment/). This Iter8 experiment is composed of three tasks, `ready`, `http`, and `assess`. The `ready` task will ensure that the `httpbin` deployment and service are running. The `http` task will generate load for the specified endpoints, `get`, `getAnything`, and `post`, and collect latency and error-related metrics. Lastly, the `assess` task will ensure that the error count is 0 for each endpoint and the mean latency is less than 50, 75, and 100 milliseconds for `get`, `getAnything`, and `post`, respectively. In addition, the runner is set to job as this will be a [single-loop experiment](https://iter8.tools/0.11/getting-started/concepts/#iter8-experiment).
+The experiment is an HTTP SLO validation test on the `httpbin` service that is described in greater detail [here](https://iter8.tools/0.13/getting-started/your-first-experiment/). This Iter8 experiment is composed of three tasks, `ready`, `http`, and `assess`. The `ready` task will ensure that the `httpbin` deployment and service are running. The `http` task will generate load for the specified endpoints, `get`, `getAnything`, and `post`, and collect latency and error-related metrics. In addition, thanks to the `warmup` parameter, the `http` task will only begin to send load after five seconds to ensure that the application has had enough time to run fully functionally. Lastly, the `assess` task will ensure that the error count is 0 for each endpoint and the mean latency is less than 50, 75, and 100 milliseconds for `get`, `getAnything`, and `post`, respectively. In addition, the runner is set to job as this will be a [single-loop experiment](https://iter8.tools/0.11/getting-started/concepts/#iter8-experiment).
 
 ### Observe experiment
 
@@ -118,8 +119,8 @@ iter8 k report -g autox-httpbin-iter8
 
   Experiment completed: true
   No task failures: true
-  Total number of tasks: 4
-  Number of completed tasks: 4
+  Total number of tasks: 5
+  Number of completed tasks: 5
   Number of completed loops: 1
 
 Whether or not service level objectives (SLOs) are satisfied:
@@ -142,42 +143,42 @@ Latest observed values for metrics:
   -------                                | -----
   http-get/error-count                   | 0.00
   http-get/error-rate                    | 0.00
-  http-get/latency-max (msec)            | 13.13
-  http-get/latency-mean (msec)           | 4.61
-  http-get/latency-min (msec)            | 1.15
-  http-get/latency-p50 (msec)            | 4.27
-  http-get/latency-p75 (msec)            | 6.05
-  http-get/latency-p90 (msec)            | 8.17
-  http-get/latency-p95 (msec)            | 9.00
-  http-get/latency-p99 (msec)            | 11.50
-  http-get/latency-p99.9 (msec)          | 12.90
-  http-get/latency-stddev (msec)         | 2.36
+  http-get/latency-max (msec)            | 67.72
+  http-get/latency-mean (msec)           | 7.10
+  http-get/latency-min (msec)            | 1.34
+  http-get/latency-p50 (msec)            | 5.94
+  http-get/latency-p75 (msec)            | 8.47
+  http-get/latency-p90 (msec)            | 11.10
+  http-get/latency-p95 (msec)            | 12.67
+  http-get/latency-p99 (msec)            | 62.57
+  http-get/latency-p99.9 (msec)          | 67.20
+  http-get/latency-stddev (msec)         | 7.68
   http-get/request-count                 | 200.00
   http-getAnything/error-count           | 0.00
   http-getAnything/error-rate            | 0.00
-  http-getAnything/latency-max (msec)    | 51.22
-  http-getAnything/latency-mean (msec)   | 5.50
-  http-getAnything/latency-min (msec)    | 1.21
-  http-getAnything/latency-p50 (msec)    | 4.45
-  http-getAnything/latency-p75 (msec)    | 6.33
-  http-getAnything/latency-p90 (msec)    | 8.40
-  http-getAnything/latency-p95 (msec)    | 10.33
-  http-getAnything/latency-p99 (msec)    | 45.00
-  http-getAnything/latency-p99.9 (msec)  | 50.98
-  http-getAnything/latency-stddev (msec) | 5.98
+  http-getAnything/latency-max (msec)    | 20.73
+  http-getAnything/latency-mean (msec)   | 5.90
+  http-getAnything/latency-min (msec)    | 1.29
+  http-getAnything/latency-p50 (msec)    | 5.52
+  http-getAnything/latency-p75 (msec)    | 7.94
+  http-getAnything/latency-p90 (msec)    | 9.93
+  http-getAnything/latency-p95 (msec)    | 11.38
+  http-getAnything/latency-p99 (msec)    | 14.00
+  http-getAnything/latency-p99.9 (msec)  | 20.58
+  http-getAnything/latency-stddev (msec) | 3.08
   http-getAnything/request-count         | 200.00
   http-post/error-count                  | 0.00
   http-post/error-rate                   | 0.00
-  http-post/latency-max (msec)           | 65.25
-  http-post/latency-mean (msec)          | 6.89
-  http-post/latency-min (msec)           | 1.20
-  http-post/latency-p50 (msec)           | 5.89
-  http-post/latency-p75 (msec)           | 8.33
-  http-post/latency-p90 (msec)           | 10.67
-  http-post/latency-p95 (msec)           | 13.33
-  http-post/latency-p99 (msec)           | 20.00
-  http-post/latency-p99.9 (msec)         | 64.20
-  http-post/latency-stddev (msec)        | 6.46
+  http-post/latency-max (msec)           | 69.14
+  http-post/latency-mean (msec)          | 6.32
+  http-post/latency-min (msec)           | 1.32
+  http-post/latency-p50 (msec)           | 5.14
+  http-post/latency-p75 (msec)           | 7.53
+  http-post/latency-p90 (msec)           | 10.33
+  http-post/latency-p95 (msec)           | 12.22
+  http-post/latency-p99 (msec)           | 14.00
+  http-post/latency-p99.9 (msec)         | 68.23
+  http-post/latency-stddev (msec)        | 6.89
   http-post/request-count                | 200.00 -->
 
 You can also produce an HTML report that you can view in the browser.
@@ -256,11 +257,12 @@ helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1
 --set groups.routeguide.specs.iter8.values.ready.service=routeguide \
 --set groups.routeguide.specs.iter8.values.ready.timeout=60s \
 --set groups.routeguide.specs.iter8.values.grpc.host=routeguide.default:50051 \
+--set groups.routeguide.specs.iter8.values.grpc.protoURL=https://raw.githubusercontent.com/iter8-tools/docs/v0.13.13/samples/route_guide/routeguide/route_guide.proto \
+--set groups.routeguide.specs.iter8.values.grpc.warmupDuration=5s \
 --set groups.routeguide.specs.iter8.values.grpc.endpoints.getFeature.call=routeguide.RouteGuide.GetFeature \
 --set groups.routeguide.specs.iter8.values.grpc.endpoints.getFeature.dataURL=https://raw.githubusercontent.com/iter8-tools/docs/v0.13.13/samples/grpc-payload/unary.json \
 --set groups.routeguide.specs.iter8.values.grpc.endpoints.listFeatures.call=routeguide.RouteGuide.ListFeatures \
 --set groups.routeguide.specs.iter8.values.grpc.endpoints.listFeatures.dataURL=https://raw.githubusercontent.com/iter8-tools/docs/v0.13.13/samples/grpc-payload/server.json \
---set groups.routeguide.specs.iter8.values.grpc.protoURL=https://raw.githubusercontent.com/iter8-tools/docs/v0.13.13/samples/route_guide/routeguide/route_guide.proto \
 --set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc-getFeature/error-count=0 \
 --set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc-getFeature/latency/mean=50 \
 --set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc-listFeatures/error-count=0 \
@@ -275,7 +277,7 @@ In this tutorial, there is only one group named `routeguide` (`groups.routeguide
 
 The trigger object definition is a combination of the name, namespace, and the group-version-resource (GVR) metadata of the trigger object, in this case `routeguide`, `default`, and GVR `apps`, `deployments`, and `v1`, respectively.
 
-The experiment is a gRPC SLO validation test on the `routeguide` service that is described in greater detail [here](https://iter8.tools/0.13/tutorials/load-test-grpc/). This Iter8 experiment is composed of three tasks, `ready`, `grpc`, and `assess`. The `ready` task will ensure that the `routeguide` deployment and service are running. The `grpc` task will generate load for the specified endpoints, `getFeature` and `listFeatures`, and collect latency and error-related metrics. Lastly, the `assess` task will ensure that the error count is 0 for both endpoints and the mean latency is less than 50 and 100 milliseconds for `getFeature` and `listFeatures`, respectively. In addition, the runner is set to job as this will be a [single-loop experiment](https://iter8.tools/0.11/getting-started/concepts/#iter8-experiment).
+The experiment is a gRPC SLO validation test on the `routeguide` service that is described in greater detail [here](https://iter8.tools/0.13/tutorials/load-test-grpc/). This Iter8 experiment is composed of three tasks, `ready`, `grpc`, and `assess`. The `ready` task will ensure that the `routeguide` deployment and service are running. The `grpc` task will generate load for the specified endpoints, `getFeature` and `listFeatures`, and collect latency and error-related metrics. In addition, thanks to the `warmup` parameter, the `grpc` task will only begin to send load after five seconds to ensure that the application has had enough time to run fully functionally. Lastly, the `assess` task will ensure that the error count is 0 for both endpoints and the mean latency is less than 50 and 100 milliseconds for `getFeature` and `listFeatures`, respectively. In addition, the runner is set to job as this will be a [single-loop experiment](https://iter8.tools/0.11/getting-started/concepts/#iter8-experiment).
 
 ### Observe experiment
 
