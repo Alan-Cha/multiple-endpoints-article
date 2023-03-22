@@ -66,14 +66,14 @@ helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1
 --set groups.httpbin.specs.iter8.values.http.endpoints.getAnything.url=http://httpbin.default/anything \
 --set groups.httpbin.specs.iter8.values.http.endpoints.post.url=http://httpbin.default/post \
 --set groups.httpbin.specs.iter8.values.http.endpoints.post.payloadStr=hello \
---set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/get/error-count=0 \
---set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/get/latency-mean=50 \
---set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getAnything/error-count=0 \
---set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/getAnything/latency-mean=75 \
---set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/post/error-count=0 \
---set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http/post/latency-mean=100 \
---set groups.httpbin.specs.iter8.version=0.13.0 \
---set groups.httpbin.specs.iter8.values.runner=j \
+--set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http-get/error-count=0 \
+--set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http-get/latency-mean=50 \
+--set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http-getAnything/error-count=0 \
+--set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http-getAnything/latency-mean=75 \
+--set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http-post/error-count=0 \
+--set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http-post/latency-mean=100 \
+--set groups.httpbin.specs.iter8.version=0.13.4 \
+--set groups.httpbin.specs.iter8.values.runner=job
 ```
 
 The AutoX controller configuration is composed of a *trigger object definition* and a set of *experiment specifications*. In this case, the trigger object is the `httpbin` deployment and there is only one experiment, an HTTP performance test with SLO validation associated with this trigger.
@@ -111,6 +111,73 @@ The following command allows you to see the results as a text report.
 iter8 k report -g autox-httpbin-iter8
 ```
 
+<!-- Experiment summary:
+*******************
+
+  Experiment completed: true
+  No task failures: true
+  Total number of tasks: 4
+  Number of completed tasks: 4
+  Number of completed loops: 1
+
+Whether or not service level objectives (SLOs) are satisfied:
+*************************************************************
+
+  SLO Conditions                             | Satisfied
+  --------------                             | ---------
+  http-get/error-count <= 0                  | true
+  http-get/latency-mean (msec) <= 50         | true
+  http-getAnything/error-count <= 0          | true
+  http-getAnything/latency-mean (msec) <= 75 | true
+  http-post/error-count <= 0                 | true
+  http-post/latency-mean (msec) <= 100       | true
+  
+
+Latest observed values for metrics:
+***********************************
+
+  Metric                                 | value
+  -------                                | -----
+  http-get/error-count                   | 0.00
+  http-get/error-rate                    | 0.00
+  http-get/latency-max (msec)            | 13.13
+  http-get/latency-mean (msec)           | 4.61
+  http-get/latency-min (msec)            | 1.15
+  http-get/latency-p50 (msec)            | 4.27
+  http-get/latency-p75 (msec)            | 6.05
+  http-get/latency-p90 (msec)            | 8.17
+  http-get/latency-p95 (msec)            | 9.00
+  http-get/latency-p99 (msec)            | 11.50
+  http-get/latency-p99.9 (msec)          | 12.90
+  http-get/latency-stddev (msec)         | 2.36
+  http-get/request-count                 | 200.00
+  http-getAnything/error-count           | 0.00
+  http-getAnything/error-rate            | 0.00
+  http-getAnything/latency-max (msec)    | 51.22
+  http-getAnything/latency-mean (msec)   | 5.50
+  http-getAnything/latency-min (msec)    | 1.21
+  http-getAnything/latency-p50 (msec)    | 4.45
+  http-getAnything/latency-p75 (msec)    | 6.33
+  http-getAnything/latency-p90 (msec)    | 8.40
+  http-getAnything/latency-p95 (msec)    | 10.33
+  http-getAnything/latency-p99 (msec)    | 45.00
+  http-getAnything/latency-p99.9 (msec)  | 50.98
+  http-getAnything/latency-stddev (msec) | 5.98
+  http-getAnything/request-count         | 200.00
+  http-post/error-count                  | 0.00
+  http-post/error-rate                   | 0.00
+  http-post/latency-max (msec)           | 65.25
+  http-post/latency-mean (msec)          | 6.89
+  http-post/latency-min (msec)           | 1.20
+  http-post/latency-p50 (msec)           | 5.89
+  http-post/latency-p75 (msec)           | 8.33
+  http-post/latency-p90 (msec)           | 10.67
+  http-post/latency-p95 (msec)           | 13.33
+  http-post/latency-p99 (msec)           | 20.00
+  http-post/latency-p99.9 (msec)         | 64.20
+  http-post/latency-stddev (msec)        | 6.46
+  http-post/request-count                | 200.00 -->
+
 You can also produce an HTML report that you can view in the browser.
 
 ```bash
@@ -118,7 +185,7 @@ iter8 k report -g autox-httpbin-iter8 -o html > report.html
 ```
 
 The HTML report will look similar to the following:
-![HTML report](images/htmlreport.png)
+![HTML report](images/httpreport.png)
 
 ### Continuous and automated experimentation
 
@@ -182,22 +249,21 @@ helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1
 --set groups.routeguide.trigger.version=v1 \
 --set groups.routeguide.trigger.resource=deployments \
 --set groups.routeguide.specs.iter8.name=iter8 \
---set "groups.routeguide.specs.iter8.values.tasks={ready,http,assess}" \
+--set "groups.routeguide.specs.iter8.values.tasks={ready,grpc,assess}" \
 --set groups.routeguide.specs.iter8.values.ready.deploy=routeguide \
 --set groups.routeguide.specs.iter8.values.ready.service=routeguide \
 --set groups.routeguide.specs.iter8.values.ready.timeout=60s \
 --set groups.routeguide.specs.iter8.values.grpc.host=routeguide.default:50051 \
---set groups.routeguide.specs.iter8.values.grpc.host=routeguide.default:81 \
 --set groups.routeguide.specs.iter8.values.grpc.endpoints.getFeature.call=routeguide.RouteGuide.GetFeature \
 --set groups.routeguide.specs.iter8.values.grpc.endpoints.getFeature.dataURL=https://raw.githubusercontent.com/iter8-tools/docs/v0.13.13/samples/grpc-payload/unary.json \
 --set groups.routeguide.specs.iter8.values.grpc.endpoints.listFeatures.call=routeguide.RouteGuide.ListFeatures \
---set groups.routeguide.specs.iter8.values.grpc.endpoints.listFeature.dataURL=https://raw.githubusercontent.com/iter8-tools/docs/v0.13.13/samples/grpc-payload/server.json \
+--set groups.routeguide.specs.iter8.values.grpc.endpoints.listFeatures.dataURL=https://raw.githubusercontent.com/iter8-tools/docs/v0.13.13/samples/grpc-payload/server.json \
 --set groups.routeguide.specs.iter8.values.grpc.protoURL=https://raw.githubusercontent.com/iter8-tools/docs/v0.13.13/samples/route_guide/routeguide/route_guide.proto \
---set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc/getFeature/error-count=0 \
---set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc/getFeature/latency-mean=50 \
---set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc/listFeatures/error-count=0 \
---set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc/listFeatures/latency-mean=100 \
---set groups.routeguide.specs.iter8.version=0.13.0 \
+--set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc-getFeature/error-count=0 \
+--set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc-getFeature/latency/mean=50 \
+--set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc-listFeatures/error-count=0 \
+--set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc-listFeatures/latency/mean=100 \
+--set groups.routeguide.specs.iter8.version=0.13.4 \
 --set groups.routeguide.specs.iter8.values.runner=job
 ```
 
@@ -234,6 +300,40 @@ The following command allows you to see the results as a text report.
 iter8 k report -g autox-routeguide-iter8
 ```
 
+<!-- Experiment summary:
+*******************
+
+  Experiment completed: true
+  No task failures: true
+  Total number of tasks: 7
+  Number of completed tasks: 7
+  Number of completed loops: 1
+
+Whether or not service level objectives (SLOs) are satisfied:
+*************************************************************
+
+  SLO Conditions                               | Satisfied
+  --------------                               | ---------
+  grpc-getFeature/error-count <= 0             | true
+  grpc-getFeature/latency/mean (msec) <= 50    | true
+  grpc-listFeatures/error-count <= 0           | true
+  grpc-listFeatures/latency/mean (msec) <= 100 | true
+  
+
+Latest observed values for metrics:
+***********************************
+
+  Metric                                | value
+  -------                               | -----
+  grpc-getFeature/error-count           | 0.00
+  grpc-getFeature/error-rate            | 0.00
+  grpc-getFeature/latency/mean (msec)   | 5.56
+  grpc-getFeature/request-count         | 200.00
+  grpc-listFeatures/error-count         | 0.00
+  grpc-listFeatures/error-rate          | 0.00
+  grpc-listFeatures/latency/mean (msec) | 7.07
+  grpc-listFeatures/request-count       | 200.00 -->
+
 You can also produce an HTML report that you can view in the browser.
 
 ```bash
@@ -241,7 +341,7 @@ iter8 k report -g autox-routeguide-iter8 -o html > report.html
 ```
 
 The HTML report will look similar to the following:
-![HTML report](images/htmlreport.png)
+![HTML report](images/grpcreport.png)
 
 ### Continuous and automated experimentation
 
