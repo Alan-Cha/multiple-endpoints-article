@@ -350,7 +350,7 @@ Now that AutoX is watching the `routeguide` deployment, releasing a new version 
 Again, we will simply change the version label in order to relaunch the test but in the real world, a new version would typically involve a change to the deployment spec (e.g., the container image) as well.
 
 ```bash
-kubectl label deployment httpbin app.kubernetes.io/version=2.0.0 --overwrite
+kubectl label deployment routeguide app.kubernetes.io/version=2.0.0 --overwrite
 ```
 
 ### Observe new experiment
