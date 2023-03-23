@@ -64,7 +64,7 @@ helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1
 --set groups.httpbin.specs.iter8.values.ready.service=httpbin \
 --set groups.httpbin.specs.iter8.values.ready.timeout=60s \
 --set groups.httpbin.specs.iter8.values.http.numRequests=200 \
---set groups.httpbin.specs.iter8.values.http.warmupDuration=5s \
+--set groups.httpbin.specs.iter8.values.http.warmupNumRequests=50 \
 --set groups.httpbin.specs.iter8.values.http.endpoints.get.url=http://httpbin.default/get \
 --set groups.httpbin.specs.iter8.values.http.endpoints.getAnything.url=http://httpbin.default/anything \
 --set groups.httpbin.specs.iter8.values.http.endpoints.post.url=http://httpbin.default/post \
@@ -75,7 +75,7 @@ helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1
 --set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http-getAnything/latency-mean=75 \
 --set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http-post/error-count=0 \
 --set groups.httpbin.specs.iter8.values.assess.SLOs.upper.http-post/latency-mean=100 \
---set groups.httpbin.specs.iter8.version=0.13.4 \
+--set groups.httpbin.specs.iter8.version=0.13.5 \
 --set groups.httpbin.specs.iter8.values.runner=job
 ```
 
@@ -143,42 +143,42 @@ Latest observed values for metrics:
   -------                                | -----
   http-get/error-count                   | 0.00
   http-get/error-rate                    | 0.00
-  http-get/latency-max (msec)            | 67.72
-  http-get/latency-mean (msec)           | 7.10
-  http-get/latency-min (msec)            | 1.34
-  http-get/latency-p50 (msec)            | 5.94
-  http-get/latency-p75 (msec)            | 8.47
-  http-get/latency-p90 (msec)            | 11.10
-  http-get/latency-p95 (msec)            | 12.67
-  http-get/latency-p99 (msec)            | 62.57
-  http-get/latency-p99.9 (msec)          | 67.20
-  http-get/latency-stddev (msec)         | 7.68
+  http-get/latency-max (msec)            | 20.67
+  http-get/latency-mean (msec)           | 5.65
+  http-get/latency-min (msec)            | 1.23
+  http-get/latency-p50 (msec)            | 4.85
+  http-get/latency-p75 (msec)            | 7.40
+  http-get/latency-p90 (msec)            | 10.12
+  http-get/latency-p95 (msec)            | 12.40
+  http-get/latency-p99 (msec)            | 19.00
+  http-get/latency-p99.9 (msec)          | 20.53
+  http-get/latency-stddev (msec)         | 3.47
   http-get/request-count                 | 200.00
   http-getAnything/error-count           | 0.00
   http-getAnything/error-rate            | 0.00
-  http-getAnything/latency-max (msec)    | 20.73
-  http-getAnything/latency-mean (msec)   | 5.90
-  http-getAnything/latency-min (msec)    | 1.29
-  http-getAnything/latency-p50 (msec)    | 5.52
-  http-getAnything/latency-p75 (msec)    | 7.94
-  http-getAnything/latency-p90 (msec)    | 9.93
-  http-getAnything/latency-p95 (msec)    | 11.38
-  http-getAnything/latency-p99 (msec)    | 14.00
-  http-getAnything/latency-p99.9 (msec)  | 20.58
-  http-getAnything/latency-stddev (msec) | 3.08
+  http-getAnything/latency-max (msec)    | 71.20
+  http-getAnything/latency-mean (msec)   | 7.09
+  http-getAnything/latency-min (msec)    | 1.23
+  http-getAnything/latency-p50 (msec)    | 5.10
+  http-getAnything/latency-p75 (msec)    | 7.56
+  http-getAnything/latency-p90 (msec)    | 11.50
+  http-getAnything/latency-p95 (msec)    | 18.00
+  http-getAnything/latency-p99 (msec)    | 70.00
+  http-getAnything/latency-p99.9 (msec)  | 71.08
+  http-getAnything/latency-stddev (msec) | 8.88
   http-getAnything/request-count         | 200.00
   http-post/error-count                  | 0.00
   http-post/error-rate                   | 0.00
-  http-post/latency-max (msec)           | 69.14
-  http-post/latency-mean (msec)          | 6.32
-  http-post/latency-min (msec)           | 1.32
-  http-post/latency-p50 (msec)           | 5.14
-  http-post/latency-p75 (msec)           | 7.53
-  http-post/latency-p90 (msec)           | 10.33
-  http-post/latency-p95 (msec)           | 12.22
-  http-post/latency-p99 (msec)           | 14.00
-  http-post/latency-p99.9 (msec)         | 68.23
-  http-post/latency-stddev (msec)        | 6.89
+  http-post/latency-max (msec)           | 75.67
+  http-post/latency-mean (msec)          | 6.02
+  http-post/latency-min (msec)           | 1.36
+  http-post/latency-p50 (msec)           | 4.78
+  http-post/latency-p75 (msec)           | 7.10
+  http-post/latency-p90 (msec)           | 10.00
+  http-post/latency-p95 (msec)           | 11.33
+  http-post/latency-p99 (msec)           | 16.00
+  http-post/latency-p99.9 (msec)         | 75.10
+  http-post/latency-stddev (msec)        | 7.54
   http-post/request-count                | 200.00 -->
 
 You can also produce an HTML report that you can view in the browser.
@@ -258,7 +258,7 @@ helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1
 --set groups.routeguide.specs.iter8.values.ready.timeout=60s \
 --set groups.routeguide.specs.iter8.values.grpc.host=routeguide.default:50051 \
 --set groups.routeguide.specs.iter8.values.grpc.protoURL=https://raw.githubusercontent.com/iter8-tools/docs/v0.13.13/samples/route_guide/routeguide/route_guide.proto \
---set groups.routeguide.specs.iter8.values.grpc.warmupDuration=5s \
+--set groups.routeguide.specs.iter8.values.grpc.warmupNumRequests=50 \
 --set groups.routeguide.specs.iter8.values.grpc.endpoints.getFeature.call=routeguide.RouteGuide.GetFeature \
 --set groups.routeguide.specs.iter8.values.grpc.endpoints.getFeature.dataURL=https://raw.githubusercontent.com/iter8-tools/docs/v0.13.13/samples/grpc-payload/unary.json \
 --set groups.routeguide.specs.iter8.values.grpc.endpoints.listFeatures.call=routeguide.RouteGuide.ListFeatures \
@@ -267,7 +267,7 @@ helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1
 --set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc-getFeature/latency/mean=50 \
 --set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc-listFeatures/error-count=0 \
 --set groups.routeguide.specs.iter8.values.assess.SLOs.upper.grpc-listFeatures/latency/mean=100 \
---set groups.routeguide.specs.iter8.version=0.13.4 \
+--set groups.routeguide.specs.iter8.version=0.13.5 \
 --set groups.routeguide.specs.iter8.values.runner=job
 ```
 
@@ -309,8 +309,8 @@ iter8 k report -g autox-routeguide-iter8
 
   Experiment completed: true
   No task failures: true
-  Total number of tasks: 7
-  Number of completed tasks: 7
+  Total number of tasks: 8
+  Number of completed tasks: 8
   Number of completed loops: 1
 
 Whether or not service level objectives (SLOs) are satisfied:
@@ -331,11 +331,11 @@ Latest observed values for metrics:
   -------                               | -----
   grpc-getFeature/error-count           | 0.00
   grpc-getFeature/error-rate            | 0.00
-  grpc-getFeature/latency/mean (msec)   | 5.56
+  grpc-getFeature/latency/mean (msec)   | 17.05
   grpc-getFeature/request-count         | 200.00
   grpc-listFeatures/error-count         | 0.00
   grpc-listFeatures/error-rate          | 0.00
-  grpc-listFeatures/latency/mean (msec) | 7.07
+  grpc-listFeatures/latency/mean (msec) | 45.75
   grpc-listFeatures/request-count       | 200.00 -->
 
 You can also produce an HTML report that you can view in the browser.
