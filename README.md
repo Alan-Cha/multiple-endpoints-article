@@ -2,7 +2,7 @@
 
 There are many challenges in testing the performance of Kubernetes applications and ML models. For example, there are countless ways to create these apps and models, ranging from a typical Kubernetes deployment to a custom resource like Knative services, KServe inference services, Seldon deployments, or something entirely different. If you are testing an HTTP application, you may have multiple endpoints you would like to test, and similarly for a gRPC application, you may have multiple methods you would like to ensure are working properly. You may also need to have a warm up period before you can begin testing because otherwise, your performance data will not reflect actual usage. Furthermore, you may want to automate the tests so you can get the latest performance data whenever you update your applications. These examples only scratch the surface of the potential problems of assessing the performance of Kubernetes applications and ML models.
 
-Iter8, an open-source Kubernetes release optimizer, was created with these issues in mind and seeks to make performance testing for Kubernetes applications and ML models straightforward and easy. Iter8 can handle previously mentioned concerns and we will show you how. In this article, we will describe how you can configure Iter8 to automatically launch performance testing experiments for an HTTP application and later on, we will also describe how to do the same for a gRPC application.
+[Iter8](https://iter8.tools/), an open-source Kubernetes release optimizer, was created with these issues in mind and seeks to make performance testing for Kubernetes applications and ML models straightforward and easy. Iter8 can handle previously mentioned concerns and we will show you how. In this article, we will describe how you can configure Iter8 to automatically launch performance testing experiments for an HTTP application and later on, for a gRPC application.
 
 ![Iter8](images/autox.png)
 
@@ -15,13 +15,13 @@ brew tap iter8-tools/iter8
 brew install iter8@0.13
 ```
 
-The Iter8 CLI provides the commands needed to see experiment reports. See [here](https://iter8.tools/0.11/getting-started/install/) for alternate methods of installation.
+The Iter8 CLI provides the commands needed to see experiment reports. See [here](https://iter8.tools/0.13/getting-started/install/) for alternate methods of installation.
 
 ### Setup Kubernetes cluster with ArgoCD
 
 As mentioned previously, AutoX is built on top of ArgoCD, so we will also need to install it.
 
-A basic install of Argo CD can be done as follows:
+A basic installation of Argo CD can be done as follows:
 
 ```bash
 kubectl create namespace argocd
@@ -52,7 +52,7 @@ kubectl label deployment httpbin app.kubernetes.io/version=1.0.0
 Following, we will configure and install the AutoX controller.
 
 ```bash
-helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
+helm install autox-httpbin autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
 --set groups.httpbin.trigger.name=httpbin \
 --set groups.httpbin.trigger.namespace=default \
 --set groups.httpbin.trigger.group=apps \
@@ -85,7 +85,7 @@ To go into more detail, the configuration is composed of a set of *groups*, and 
 
 The trigger object definition is a combination of the name, namespace, and the group-version-resource (GVR) metadata of the trigger object, in this case `httpbin`, `default`, and GVR `apps`, `deployments`, and `v1`, respectively. 
 
-The experiment is an HTTP SLO validation test on the `httpbin` service that is described in greater detail [here](https://iter8.tools/0.13/getting-started/your-first-experiment/). This Iter8 experiment is composed of three tasks, `ready`, `http`, and `assess`. The `ready` task will ensure that the `httpbin` deployment and service are running. The `http` task will generate load for the specified endpoints, `get`, `getAnything`, and `post`, and collect latency and error-related metrics. In addition, thanks to the `warmup` parameter, the `http` task will only begin to send load after five seconds to ensure that the application has had enough time to run fully functionally. Lastly, the `assess` task will ensure that the error count is 0 for each endpoint and the mean latency is less than 50, 75, and 100 milliseconds for `get`, `getAnything`, and `post`, respectively. In addition, the runner is set to job as this will be a [single-loop experiment](https://iter8.tools/0.11/getting-started/concepts/#iter8-experiment).
+The experiment is an HTTP SLO validation test on the `httpbin` service that is described in greater detail [here](https://iter8.tools/0.13/getting-started/your-first-experiment/). This Iter8 experiment is composed of three tasks, `ready`, `http`, and `assess`. The `ready` task will ensure that the `httpbin` deployment and service are running. The `http` task will generate load for the specified endpoints, `get`, `getAnything`, and `post`, and collect latency and error-related metrics. In addition, thanks to the `warmup` parameter, the `http` task will only begin to send load after after 50 initial requests to ensure that the application has had enough time to run fully functionally. Lastly, the `assess` task will ensure that the error count is 0 for each endpoint and the mean latency is less than 50, 75, and 100 milliseconds for `get`, `getAnything`, and `post`, respectively. In addition, the runner is set to job as this will be a [single-loop experiment](https://iter8.tools/0.13/getting-started/concepts/#iter8-experiment).
 
 ### Observe experiment
 
@@ -208,10 +208,11 @@ If we were to continue to update the deployment (and change its version label), 
 
 ### Cleanup
 
-Remove the Iter8 experiment and the sample app from the Kubernetes cluster and the local Iter8 `charts` folder.
+Remove the Iter8 experiment and the `httpbin` service from the Kubernetes cluster.
 
 ```shell
-iter8 k delete
+iter8 k delete -g autox-httpbin-iter8
+helm delete autox-httpbin
 kubectl delete svc/httpbin
 kubectl delete deploy/httpbin
 ```
@@ -228,7 +229,7 @@ We will create a `routeguide` deployment and service, similar to the `httpbin` d
 
 ```bash
 kubectl create deployment routeguide --image=golang --port=50051 \
--- bash -c "git clone -b v0.13.13 --depth 1 https://github.com/iter8-tools/docs; cd docs/samples/route_guide; go run server/server.go"
+-- bash -c "git clone -b v1.52.0 --depth 1 https://github.com/grpc/grpc-go; cd grpc-go/examples/route_guide; sed -i '' 's/localhost//' server/server.go; go run server/server.go"
 kubectl expose deployment routeguide --port=50051
 ```
 
@@ -245,7 +246,7 @@ kubectl label deployment routeguide app.kubernetes.io/version=1.0.0
 Following, we will configure and install the AutoX controller.
 
 ```bash
-helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
+helm install autox-routeguide autox --repo https://iter8-tools.github.io/hub/ --version 0.1.6 \
 --set groups.routeguide.trigger.name=routeguide \
 --set groups.routeguide.trigger.namespace=default \
 --set groups.routeguide.trigger.group=apps \
@@ -257,7 +258,7 @@ helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1
 --set groups.routeguide.specs.iter8.values.ready.service=routeguide \
 --set groups.routeguide.specs.iter8.values.ready.timeout=60s \
 --set groups.routeguide.specs.iter8.values.grpc.host=routeguide.default:50051 \
---set groups.routeguide.specs.iter8.values.grpc.protoURL=https://raw.githubusercontent.com/iter8-tools/docs/v0.13.13/samples/route_guide/routeguide/route_guide.proto \
+--set groups.routeguide.specs.iter8.values.grpc.protoURL=https://raw.githubusercontent.com/grpc/grpc-go/v1.52.0/examples/route_guide/routeguide/route_guide.proto \
 --set groups.routeguide.specs.iter8.values.grpc.warmupNumRequests=50 \
 --set groups.routeguide.specs.iter8.values.grpc.endpoints.getFeature.call=routeguide.RouteGuide.GetFeature \
 --set groups.routeguide.specs.iter8.values.grpc.endpoints.getFeature.dataURL=https://raw.githubusercontent.com/iter8-tools/docs/v0.13.13/samples/grpc-payload/unary.json \
@@ -271,13 +272,13 @@ helm install autox autox --repo https://iter8-tools.github.io/hub/ --version 0.1
 --set groups.routeguide.specs.iter8.values.runner=job
 ```
 
-The biggest difference between this configuration and the configuration from the HTTP tutorial is the `grpc` task, which has replaced the `http` task. In this example, we specify one group name `routeguide` (`groups.routeguide`)
+The biggest difference between this configuration and the one from the HTTP tutorial is the `grpc` task, which has replaced the `http` task.
 
 In this tutorial, there is only one group named `routeguide` (`groups.routeguide`), and within that group, there is the trigger object definition (`groups.routeguide.trigger...`) and a single experiment spec named `iter8` (`groups.routeguide.specs.iter8...`). 
 
 The trigger object definition is a combination of the name, namespace, and the group-version-resource (GVR) metadata of the trigger object, in this case `routeguide`, `default`, and GVR `apps`, `deployments`, and `v1`, respectively.
 
-The experiment is a gRPC SLO validation test on the `routeguide` service that is described in greater detail [here](https://iter8.tools/0.13/tutorials/load-test-grpc/). This Iter8 experiment is composed of three tasks, `ready`, `grpc`, and `assess`. The `ready` task will ensure that the `routeguide` deployment and service are running. The `grpc` task will generate load for the specified endpoints, `getFeature` and `listFeatures`, and collect latency and error-related metrics. In addition, thanks to the `warmup` parameter, the `grpc` task will only begin to send load after five seconds to ensure that the application has had enough time to run fully functionally. Lastly, the `assess` task will ensure that the error count is 0 for both endpoints and the mean latency is less than 50 and 100 milliseconds for `getFeature` and `listFeatures`, respectively. In addition, the runner is set to job as this will be a [single-loop experiment](https://iter8.tools/0.11/getting-started/concepts/#iter8-experiment).
+The experiment is a gRPC SLO validation test on the `routeguide` service that is described in greater detail [here](https://iter8.tools/0.13/tutorials/load-test-grpc/). This Iter8 experiment is composed of three tasks, `ready`, `grpc`, and `assess`. The `ready` task will ensure that the `routeguide` deployment and service are running. The `grpc` task will generate load for the specified endpoints, `getFeature` and `listFeatures`, and collect latency and error-related metrics. In addition, thanks to the `warmup` parameter, the `grpc` task will only begin to send load after 50 initial requests to ensure that the application has had enough time to run fully functionally. Lastly, the `assess` task will ensure that the error count is 0 for both endpoints and the mean latency is less than 50 and 100 milliseconds for `getFeature` and `listFeatures`, respectively. In addition, the runner is set to job as this will be a [single-loop experiment](https://iter8.tools/0.13/getting-started/concepts/#iter8-experiment).
 
 ### Observe experiment
 
@@ -288,6 +289,7 @@ iter8 k assert -c completed -c nofailure -c slos -g autox-routeguide-iter8
 ```
 
 We can see in the sample output that the test has completed, there were no failures, and all SLOs and conditions were satisfied.
+
 ```
 INFO[2023-01-11 14:43:45] inited Helm config          
 INFO[2023-01-11 14:43:45] experiment completed
@@ -365,23 +367,24 @@ If we were to continue to update the deployment (and change its version label), 
 
 ### Cleanup
 
-Remove the Iter8 experiment and the sample app from the Kubernetes cluster and the local Iter8 `charts` folder.
+Remove the Iter8 experiment and the `routeguide` service from the Kubernetes cluster.
 
 ```shell
-iter8 k delete
+iter8 k delete -g autox-routeguide-iter8
+helm delete autox-routeguide
 kubectl delete svc/routeguide
 kubectl delete deploy/routeguide
 ```
 
 ### More things you can do
 
-In this article, we show how you can automate performance testing for both HTTP and gRPC. The first thing you should consider is trying it out on your own HTTP and gRPC clusters. In order to do this, recall that you need to specify a trigger object, ensure the trigger object has a version label, and configure Iter8 with the appropriate performance tests to run.
-
-In the tutorials, we utilized the `http` and `grpc` tasks. Both of these tasks can be augmented in a number of ways, such as adding headers, providing a payload, or modulating the query rate. To learn more, see [here](https://iter8.tools/0.13/user-guide/tasks/http/) for the documentation of the `http` task and [here](https://iter8.tools/0.13/user-guide/tasks/grpc/) for the documentation of the `grpc` task.
+In this article, we show how you can automate performance testing for both HTTP and gRPC. The first thing you should consider is trying Iter8 out on your own HTTP and gRPC applications. In order to do this, recall that you need to specify a trigger object, ensure the trigger object has a version label, and configure Iter8 with the appropriate performance tests to run.
 
 AutoX is designed to use any Kubernetes resource object (including those with a custom resource type) as a trigger object in AutoX. For example, the trigger object can be a Knative service, a KServe inference service, or a Seldon deployment.
 
-Furthermore, you can add additional tasks that ship out-of-the-box with Iter8, in order to enrich the experiments. For example, you can add a `slack` task so that your experiment results will be posted on Slack. That way, you can automatically have the lastest performance statistics after every update. Here is the [documentation](https://iter8.tools/0.13/user-guide/tasks/slack/) for the `slack` task as well as a [tutorial](https://iter8.tools/0.13/tutorials/integrations/slack/) for using the Slack task.
+Furthermore, recall that we utilized the `http` and `grpc` tasks. Both of these tasks can be augmented in a number of ways, such as adding headers, providing a payload, or modulating the query rate. See [here](https://iter8.tools/0.13/user-guide/tasks/http/) for the documentation of the `http` task and [here](https://iter8.tools/0.13/user-guide/tasks/grpc/) for the documentation of the `grpc` task.
+
+Additionally, many more tasks ship out-of-the-box with Iter8, which you can use to your experiments. For example, you can add a `slack` task so that your experiment results will be posted on Slack. That way, you can automatically have the lastest performance statistics after every update. The `github` task allows you to start a workflow for your CI/CD needs. See [here](https://iter8.tools/0.13/user-guide/tasks/slack/) for the documentation of the `slack` task and [here](https://iter8.tools/0.13/user-guide/tasks/github/) for the documentation of the `github` task.
 
 You can also automate experiments that are not from Iter8. For example, a [Litmus Chaos chaos experiment](https://github.com/iter8-tools/hub/tree/8e40c740a33afba4afd5623588128da49b7f08f1/charts/litmuschaos) is available on Iter8 hub, which can also be configured with AutoX.
 
@@ -389,4 +392,4 @@ Lastly, recall that you can provide multiple groups and experiment specs so Auto
 
 ### Takeaways
 
-Iter8 is a powerful performance testing tool for your Kubernetes applications, and now you can configure Iter8 in a delarative manner so that you can it automatically test your applications as soon as you update them. Configuring AutoX is straightforward, and just requires specifying a trigger Kubernetes resource object and the experiments you want to associated with this trigger object. Please see the [Iter8 documentation](https://iter8.tools) for more information all the other things you can do with Iter8! You can engage with the Iter8 community on [Slack](https://join.slack.com/t/iter8-tools/shared_invite/zt-awl2se8i-L0pZCpuHntpPejxzLicbmw) and [GitHub](https://github.com/iter8-tools/iter8).
+Iter8 is a powerful performance testing tool for your Kubernetes applications and ML models, and now you can configure Iter8 in a delarative manner so that you can automatically test your applications as soon as you update them. Configuring AutoX is straightforward and is just a matter of specifying a trigger Kubernetes resource object, addubg a label, and configuring the experiments you want to run. Please see the [Iter8 documentation](https://iter8.tools) for more information about all the other things you can do with Iter8! You can engage with the Iter8 community on [Slack](https://join.slack.com/t/iter8-tools/shared_invite/zt-awl2se8i-L0pZCpuHntpPejxzLicbmw) and [GitHub](https://github.com/iter8-tools/iter8).
